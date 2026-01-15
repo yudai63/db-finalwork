@@ -48,26 +48,40 @@
 </table>
 </div>
 
+<script type="application/json" id="chart-data">
+{
+  "labels": {{ labels | tojson | safe }},
+  "values": {{ values | tojson | safe }}
+}
+</script>
+
 <script>
-const ctx = document.getElementById('expenseChart');
+const chartData = JSON.parse(
+  document.getElementById("chart-data").textContent
+);
+
+const ctx = document
+  .getElementById("expenseChart")
+  .getContext("2d");
+
 new Chart(ctx, {
-    type: 'bar',
-    data: {
-        labels: {{ labels | tojson }},
-        datasets: [{
-            label: 'カテゴリ別支出',
-            data: {{ values | tojson }},
-            backgroundColor: '#4f46e5'
-        }]
-    },
-    options: {
-        responsive: true,
-        plugins: {
-            legend: { display: false }
-        }
+  type: "bar",
+  data: {
+    labels: chartData.labels,
+    datasets: [{
+      data: chartData.values,
+      backgroundColor: "#4f46e5"
+    }]
+  },
+  options: {
+    responsive: true,
+    plugins: {
+      legend: { display: false }
     }
+  }
 });
 </script>
+
 
 </body>
 </html>
