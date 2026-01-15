@@ -70,7 +70,9 @@ new Chart(ctx, {
     labels: chartData.labels,
     datasets: [{
       data: chartData.values,
-      backgroundColor: "#4f46e5"
+      backgroundColor: "#4f46e5",
+      barPercentage: 0.5,
+      categoryPercentage: 0.6
     }]
   },
   options: {
@@ -81,6 +83,7 @@ new Chart(ctx, {
   }
 });
 </script>
+
 
 
 </body>

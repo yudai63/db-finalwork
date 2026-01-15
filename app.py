@@ -12,11 +12,35 @@ def get_db_connection():
 
 def get_categories():
     conn = get_db_connection()
-    categories = conn.execute(
-        "SELECT * FROM categories ORDER BY name"
-    ).fetchall()
+    categories = conn.execute("""
+        SELECT * FROM categories
+        WHERE id IN (SELECT DISTINCT category_id FROM expenses)
+           OR is_fixed = 1
+        ORDER BY name
+    """).fetchall()
     conn.close()
     return categories
+
+def get_or_create_category(conn, name):
+    cur = conn.cursor()
+    row = cur.execute(
+        "SELECT id FROM categories WHERE name=?",
+        (name,)
+    ).fetchone()
+    if row:
+        return row["id"]
+    cur.execute(
+        "INSERT INTO categories (name, is_fixed) VALUES (?, 0)",
+        (name,)
+    )
+    return cur.lastrowid
+
+def cleanup_unused_categories(conn):
+    conn.execute("""
+        DELETE FROM categories
+        WHERE is_fixed = 0
+        AND id NOT IN (SELECT DISTINCT category_id FROM expenses)
+    """)
 
 @app.route("/")
 def index():
@@ -33,7 +57,7 @@ def index():
         """, (month + "%",)).fetchall()
 
         graph_data = conn.execute("""
-            SELECT c.name, SUM(e.amount) as total
+            SELECT c.name, SUM(e.amount) AS total
             FROM expenses e
             JOIN categories c ON e.category_id = c.id
             WHERE e.date LIKE ?
@@ -48,7 +72,7 @@ def index():
         """).fetchall()
 
         graph_data = conn.execute("""
-            SELECT c.name, SUM(e.amount) as total
+            SELECT c.name, SUM(e.amount) AS total
             FROM expenses e
             JOIN categories c ON e.category_id = c.id
             GROUP BY c.name
@@ -64,8 +88,8 @@ def index():
 
     conn.close()
 
-    labels = [row["name"] for row in graph_data]
-    values = [row["total"] for row in graph_data]
+    labels = [r["name"] for r in graph_data]
+    values = [r["total"] for r in graph_data]
 
     return render_template(
         "index.html",
@@ -77,29 +101,32 @@ def index():
         values=values
     )
 
-@app.route("/add", methods=["GET", "POST"])
+@app.route("/add", methods=["GET","POST"])
 def add():
     categories = get_categories()
 
     if request.method == "POST":
-        date = request.form["date"]
-        amount = int(request.form["amount"])
-        memo = request.form.get("memo", "")
-
         conn = get_db_connection()
         cur = conn.cursor()
 
         if request.form["category"] == "new":
-            new_cat = request.form["new_category"]
-            cur.execute("INSERT INTO categories (name) VALUES (?)", (new_cat,))
-            category_id = cur.lastrowid
+            category_id = get_or_create_category(
+                conn, request.form["new_category"]
+            )
         else:
             category_id = int(request.form["category"])
 
         cur.execute("""
             INSERT INTO expenses (date, category_id, amount, memo)
-            VALUES (?, ?, ?, ?)
-        """, (date, category_id, amount, memo))
+            VALUES (?,?,?,?)
+        """, (
+            request.form["date"],
+            int(request.form["amount"]),
+            category_id,
+            request.form.get("memo","")
+        ))
+
+        cleanup_unused_categories(conn)
 
         conn.commit()
         conn.close()
@@ -108,7 +135,7 @@ def add():
     today = datetime.today().strftime("%Y-%m-%d")
     return render_template("add.html", categories=categories, today=today)
 
-@app.route("/edit/<int:id>", methods=["GET", "POST"])
+@app.route("/edit/<int:id>", methods=["GET","POST"])
 def edit(id):
     conn = get_db_connection()
     expense = conn.execute(
@@ -117,15 +144,12 @@ def edit(id):
     categories = get_categories()
 
     if request.method == "POST":
-        date = request.form["date"]
-        amount = int(request.form["amount"])
-        memo = request.form.get("memo", "")
         cur = conn.cursor()
 
         if request.form["category"] == "new":
-            new_cat = request.form["new_category"]
-            cur.execute("INSERT INTO categories (name) VALUES (?)", (new_cat,))
-            category_id = cur.lastrowid
+            category_id = get_or_create_category(
+                conn, request.form["new_category"]
+            )
         else:
             category_id = int(request.form["category"])
 
@@ -133,7 +157,15 @@ def edit(id):
             UPDATE expenses
             SET date=?, category_id=?, amount=?, memo=?
             WHERE id=?
-        """, (date, category_id, amount, memo, id))
+        """, (
+            request.form["date"],
+            category_id,
+            int(request.form["amount"]),
+            request.form.get("memo",""),
+            id
+        ))
+
+        cleanup_unused_categories(conn)
 
         conn.commit()
         conn.close()
@@ -148,6 +180,7 @@ def edit(id):
 def delete(id):
     conn = get_db_connection()
     conn.execute("DELETE FROM expenses WHERE id=?", (id,))
+    cleanup_unused_categories(conn)
     conn.commit()
     conn.close()
     return redirect(url_for("index"))
