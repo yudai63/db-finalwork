@@ -15,7 +15,7 @@ function toggleNewCategory(sel){
 
 <div class="container">
 <h1>支出編集</h1>
-
+<div class="form-box">
 <form method="post">
 日付 <input type="date" name="date" value="{{ expense.date }}"><br>
 
@@ -39,7 +39,7 @@ function toggleNewCategory(sel){
 
 <button>更新</button>
 </form>
-
+</div>
 <form method="post" action="{{ url_for('delete', id=expense.id) }}">
 <button class="danger">削除</button>
 </form>

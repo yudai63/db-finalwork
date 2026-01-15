@@ -16,6 +16,7 @@ function toggleNewCategory(sel){
 <div class="container">
 <h1>新規支出</h1>
 
+<div class="form-box">
 <form method="post">
 日付 <input type="date" name="date" value="{{ today }}"><br>
 
@@ -36,6 +37,7 @@ function toggleNewCategory(sel){
 
 <button>登録</button>
 </form>
+</div>
 
 <a href="{{ url_for('index') }}">戻る</a>
 </div>
