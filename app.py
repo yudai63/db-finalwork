@@ -13,13 +13,25 @@ def get_db_connection():
 def get_categories():
     conn = get_db_connection()
     categories = conn.execute("""
-        SELECT * FROM categories
+        SELECT *
+        FROM categories
         WHERE id IN (SELECT DISTINCT category_id FROM expenses)
            OR is_fixed = 1
-        ORDER BY name
+        ORDER BY
+            CASE name
+                WHEN '食費' THEN 1
+                WHEN '交通費' THEN 2
+                WHEN '生活用品' THEN 3
+                WHEN '書籍' THEN 4
+                WHEN '趣味' THEN 5
+                WHEN 'その他' THEN 6
+                ELSE 100
+            END,
+            name
     """).fetchall()
     conn.close()
     return categories
+
 
 def get_or_create_category(conn, name):
     cur = conn.cursor()
@@ -121,8 +133,8 @@ def add():
             VALUES (?,?,?,?)
         """, (
             request.form["date"],
-            int(request.form["amount"]),
             category_id,
+            int(request.form["amount"]),
             request.form.get("memo","")
         ))
 
