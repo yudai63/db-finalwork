@@ -1,28 +1,51 @@
 <!DOCTYPE html>
-<html>
+<html lang="ja">
 <head>
-    <meta charset="UTF-8">
-    <title>支出編集</title>
+<meta charset="UTF-8">
+<title>編集</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+<script>
+function toggleNewCategory(sel){
+  document.getElementById("newCat").style.display =
+    sel.value === "new" ? "block" : "none";
+}
+</script>
 </head>
 <body>
-    <h1>支出の編集</h1>
-    <form method="post">
-        日付：<input type="date" name="date" value="{{ expense.date }}" required><br>
-        金額：<input type="number" name="amount" value="{{ expense.amount }}" required><br>
-        用途：
-        <select name="category">
-            {% for c in categories %}
-            <option value="{{ c.id }}" {% if c.id == expense.category_id %}selected{% endif %}>
-                {{ c.name }}
-            </option>
-            {% endfor %}
-        </select><br>
-        メモ：<input type="text" name="memo" value="{{ expense.memo }}"><br>
-        <button type="submit">更新する</button>
-    </form>
-    <form action="{{ url_for('delete', id=expense.id) }}" method="post">
-        <button type="submit">削除</button>
-    </form>
-    <a href="{{ url_for('index') }}">戻る</a>
+
+<div class="container">
+<h1>支出編集</h1>
+
+<form method="post">
+日付 <input type="date" name="date" value="{{ expense.date }}"><br>
+
+用途
+<select name="category" onchange="toggleNewCategory(this)">
+  {% for c in categories %}
+    <option value="{{ c.id }}"
+      {% if c.id == expense.category_id %}selected{% endif %}>
+      {{ c.name }}
+    </option>
+  {% endfor %}
+  <option value="new">＋ 新しいカテゴリ</option>
+</select>
+
+<div id="newCat" style="display:none;">
+  <input type="text" name="new_category" placeholder="カテゴリ名">
+</div>
+
+金額 <input type="number" name="amount" value="{{ expense.amount }}"><br>
+メモ <input type="text" name="memo" value="{{ expense.memo }}"><br>
+
+<button>更新</button>
+</form>
+
+<form method="post" action="{{ url_for('delete', id=expense.id) }}">
+<button class="danger">削除</button>
+</form>
+
+<a href="{{ url_for('index') }}">戻る</a>
+</div>
+
 </body>
 </html>

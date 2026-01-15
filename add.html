@@ -1,23 +1,44 @@
 <!DOCTYPE html>
-<html>
+<html lang="ja">
 <head>
-    <meta charset="UTF-8">
-    <title>新規支出登録</title>
+<meta charset="UTF-8">
+<title>新規追加</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+<script>
+function toggleNewCategory(sel){
+  document.getElementById("newCat").style.display =
+    sel.value === "new" ? "block" : "none";
+}
+</script>
 </head>
 <body>
-    <h1>新規支出登録</h1>
-    <form method="post">
-        日付：<input type="date" name="date" required><br>
-        金額：<input type="number" name="amount" required><br>
-        用途：
-        <select name="category">
-            {% for c in categories %}
-            <option value="{{ c.id }}">{{ c.name }}</option>
-            {% endfor %}
-        </select><br>
-        メモ：<input type="text" name="memo"><br>
-        <button type="submit">登録する</button>
-    </form>
-    <a href="{{ url_for('index') }}">戻る</a>
+
+<div class="container">
+<h1>新規支出</h1>
+
+<form method="post">
+日付 <input type="date" name="date" value="{{ today }}"><br>
+
+用途
+<select name="category" onchange="toggleNewCategory(this)">
+  {% for c in categories %}
+    <option value="{{ c.id }}">{{ c.name }}</option>
+  {% endfor %}
+  <option value="new">＋ 新しいカテゴリ</option>
+</select>
+
+<div id="newCat" style="display:none;">
+  <input type="text" name="new_category" placeholder="カテゴリ名">
+</div>
+
+金額 <input type="number" name="amount"><br>
+メモ <input type="text" name="memo"><br>
+
+<button>登録</button>
+</form>
+
+<a href="{{ url_for('index') }}">戻る</a>
+</div>
+
 </body>
 </html>
