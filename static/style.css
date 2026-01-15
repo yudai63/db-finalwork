@@ -15,6 +15,10 @@ h1 {
   margin-bottom: 20px;
 }
 
+.graph-area {
+  margin: 30px 0;
+}
+
 table {
   width: 100%;
   border-collapse: collapse;
