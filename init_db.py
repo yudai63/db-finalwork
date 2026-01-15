@@ -3,13 +3,16 @@ import sqlite3
 conn = sqlite3.connect("db.sqlite3")
 cur = conn.cursor()
 
+# --- categories テーブル ---
 cur.execute("""
 CREATE TABLE IF NOT EXISTS categories (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    name TEXT NOT NULL
+    name TEXT NOT NULL UNIQUE,
+    is_fixed INTEGER NOT NULL DEFAULT 0
 )
 """)
 
+# --- expenses テーブル ---
 cur.execute("""
 CREATE TABLE IF NOT EXISTS expenses (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -21,11 +24,21 @@ CREATE TABLE IF NOT EXISTS expenses (
 )
 """)
 
-# 初期カテゴリ
-cur.execute("INSERT INTO categories (name) VALUES ('食費')")
-cur.execute("INSERT INTO categories (name) VALUES ('交通費')")
-cur.execute("INSERT INTO categories (name) VALUES ('趣味')")
-cur.execute("INSERT INTO categories (name) VALUES ('その他')")
+# --- 初期（固定）カテゴリ ---
+fixed_categories = [
+    "食費",
+    "交通費",
+    "趣味",
+    "その他",
+    "書籍",
+    "生活用品"
+]
+
+for name in fixed_categories:
+    cur.execute("""
+    INSERT OR IGNORE INTO categories (name, is_fixed)
+    VALUES (?, 1)
+    """, (name,))
 
 conn.commit()
 conn.close()
