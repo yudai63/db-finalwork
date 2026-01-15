@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <title>Simple家計簿</title>
 <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
 
@@ -25,6 +26,10 @@
 
 <a class="btn" href="{{ url_for('add') }}">＋ 新規入力</a>
 
+<div class="graph-area">
+  <canvas id="expenseChart"></canvas>
+</div>
+
 <table>
 <tr><th>日付</th><th>用途</th><th>金額</th><th>メモ</th><th></th></tr>
 {% for e in expenses %}
@@ -42,6 +47,27 @@
 </tr>
 </table>
 </div>
+
+<script>
+const ctx = document.getElementById('expenseChart');
+new Chart(ctx, {
+    type: 'bar',
+    data: {
+        labels: {{ labels | tojson }},
+        datasets: [{
+            label: 'カテゴリ別支出',
+            data: {{ values | tojson }},
+            backgroundColor: '#4f46e5'
+        }]
+    },
+    options: {
+        responsive: true,
+        plugins: {
+            legend: { display: false }
+        }
+    }
+});
+</script>
 
 </body>
 </html>

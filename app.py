@@ -18,10 +18,9 @@ def get_categories():
     conn.close()
     return categories
 
-# ===== 一覧（＋月選択）=====
 @app.route("/")
 def index():
-    month = request.args.get("month")  # 例: 2025-12
+    month = request.args.get("month")
     conn = get_db_connection()
 
     if month:
@@ -32,12 +31,27 @@ def index():
             WHERE e.date LIKE ?
             ORDER BY e.date ASC
         """, (month + "%",)).fetchall()
+
+        graph_data = conn.execute("""
+            SELECT c.name, SUM(e.amount) as total
+            FROM expenses e
+            JOIN categories c ON e.category_id = c.id
+            WHERE e.date LIKE ?
+            GROUP BY c.name
+        """, (month + "%",)).fetchall()
     else:
         expenses = conn.execute("""
             SELECT e.id, e.date, e.amount, e.memo, c.name AS category
             FROM expenses e
             JOIN categories c ON e.category_id = c.id
             ORDER BY e.date ASC
+        """).fetchall()
+
+        graph_data = conn.execute("""
+            SELECT c.name, SUM(e.amount) as total
+            FROM expenses e
+            JOIN categories c ON e.category_id = c.id
+            GROUP BY c.name
         """).fetchall()
 
     total = sum(e["amount"] for e in expenses)
@@ -49,15 +63,20 @@ def index():
     """).fetchall()
 
     conn.close()
+
+    labels = [row["name"] for row in graph_data]
+    values = [row["total"] for row in graph_data]
+
     return render_template(
         "index.html",
         expenses=expenses,
         total=total,
         months=months,
-        selected_month=month
+        selected_month=month,
+        labels=labels,
+        values=values
     )
 
-# ===== 新規追加 =====
 @app.route("/add", methods=["GET", "POST"])
 def add():
     categories = get_categories()
@@ -67,21 +86,21 @@ def add():
         amount = int(request.form["amount"])
         memo = request.form.get("memo", "")
 
+        conn = get_db_connection()
+        cur = conn.cursor()
+
         if request.form["category"] == "new":
             new_cat = request.form["new_category"]
-            conn = get_db_connection()
-            cur = conn.cursor()
             cur.execute("INSERT INTO categories (name) VALUES (?)", (new_cat,))
             category_id = cur.lastrowid
-            conn.commit()
         else:
             category_id = int(request.form["category"])
-            conn = get_db_connection()
 
-        conn.execute("""
+        cur.execute("""
             INSERT INTO expenses (date, category_id, amount, memo)
             VALUES (?, ?, ?, ?)
         """, (date, category_id, amount, memo))
+
         conn.commit()
         conn.close()
         return redirect(url_for("index"))
@@ -89,7 +108,6 @@ def add():
     today = datetime.today().strftime("%Y-%m-%d")
     return render_template("add.html", categories=categories, today=today)
 
-# ===== 編集 =====
 @app.route("/edit/<int:id>", methods=["GET", "POST"])
 def edit(id):
     conn = get_db_connection()
@@ -102,20 +120,21 @@ def edit(id):
         date = request.form["date"]
         amount = int(request.form["amount"])
         memo = request.form.get("memo", "")
+        cur = conn.cursor()
 
         if request.form["category"] == "new":
             new_cat = request.form["new_category"]
-            cur = conn.cursor()
             cur.execute("INSERT INTO categories (name) VALUES (?)", (new_cat,))
             category_id = cur.lastrowid
         else:
             category_id = int(request.form["category"])
 
-        conn.execute("""
+        cur.execute("""
             UPDATE expenses
             SET date=?, category_id=?, amount=?, memo=?
             WHERE id=?
         """, (date, category_id, amount, memo, id))
+
         conn.commit()
         conn.close()
         return redirect(url_for("index"))
@@ -125,7 +144,6 @@ def edit(id):
         "edit.html", expense=expense, categories=categories
     )
 
-# ===== 削除 =====
 @app.route("/delete/<int:id>", methods=["POST"])
 def delete(id):
     conn = get_db_connection()
