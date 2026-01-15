@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>新規支出登録</title>
+</head>
+<body>
+    <h1>新規支出登録</h1>
+    <form method="post">
+        日付：<input type="date" name="date" required><br>
+        金額：<input type="number" name="amount" required><br>
+        用途：
+        <select name="category">
+            {% for c in categories %}
+            <option value="{{ c.id }}">{{ c.name }}</option>
+            {% endfor %}
+        </select><br>
+        メモ：<input type="text" name="memo"><br>
+        <button type="submit">登録する</button>
+    </form>
+    <a href="{{ url_for('index') }}">戻る</a>
+</body>
+</html>

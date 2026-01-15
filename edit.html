@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>支出編集</title>
+</head>
+<body>
+    <h1>支出の編集</h1>
+    <form method="post">
+        日付：<input type="date" name="date" value="{{ expense.date }}" required><br>
+        金額：<input type="number" name="amount" value="{{ expense.amount }}" required><br>
+        用途：
+        <select name="category">
+            {% for c in categories %}
+            <option value="{{ c.id }}" {% if c.id == expense.category_id %}selected{% endif %}>
+                {{ c.name }}
+            </option>
+            {% endfor %}
+        </select><br>
+        メモ：<input type="text" name="memo" value="{{ expense.memo }}"><br>
+        <button type="submit">更新する</button>
+    </form>
+    <form action="{{ url_for('delete', id=expense.id) }}" method="post">
+        <button type="submit">削除</button>
+    </form>
+    <a href="{{ url_for('index') }}">戻る</a>
+</body>
+</html>
